@@ -352,34 +352,42 @@ function go(e){
   if(e){vib(12);chk(e.clientX||W/2,e.clientY||H/2,0);}
   if(fin)return;
   if(!ini){
-    ini=1;vib();
+    ini=1;vib([60,80,100]);
     g("wax").classList.add("broken");g("wring").classList.add("broken");
     g("wglow").classList.add("broken");g("wrib").classList.add("broken");
     startMusic();
-    setTimeout(()=>{g("p").style.display="none";g("c").style.display="flex";ver(0)},450);
+    setTimeout(()=>{g("p").style.display="none";g("c").style.display="flex";ver(0)},380);
     return;
   }
   if(escB){
-    clearInterval(t1);clearTimeout(t2);
-    const l=g("l"),c=esc[idx];l.textContent=c.f;l.className=c.c;
-    anF(idx);g("t").textContent=c.m;finE(idx);return;
+    clearTimeout(t2);
+    const c=esc[idx];
+    g("t").textContent=c.m;
+    finE(idx);
+    return;
   }
   if(idx<esc.length-1){vib(30);idx++;ver(idx)}
 }
 function anF(i){clearInterval(t3);let f=0;t3=setInterval(()=>{f=(f+1)%2;g("l").textContent=esc[i].f[f]},850)}
 function ver(i){
   clearInterval(t1);clearTimeout(t2);clearInterval(t3);escB=1;
-  const c=esc[i];g("bar").style.width=((i+1)/esc.length*100)+"%";
+  const c=esc[i];
+  g("bar").style.width=((i+1)/esc.length*100)+"%";
   document.body.style.background="radial-gradient(circle at 50% 30%,"+c.b+")";
-  const l=g("l"),tx=g("t"),ind=g("i");l.className="";l.textContent="";tx.textContent="";ind.className="in";ind.textContent="";
-  const ln=c.f.split("\n");let k=0;
-  t1=setInterval(()=>{if(k<ln.length)l.textContent+=(k?"\n":"")+ln[k++];else{clearInterval(t1);l.className=c.c;anF(i);et(c.m,0,i)}},65);
+  const l=g("l"),tx=g("t"),ind=g("i");
+  l.textContent=c.f[0];
+  l.className=c.c;
+  anF(i);
+  tx.textContent="";
+  ind.className="in";
+  ind.textContent="";
+  et(c.m,0,i);
 }
-function et(m,p,i){if(p<=m.length){g("t").textContent=m.slice(0,p)+"|";t2=setTimeout(()=>et(m,p+1,i),55)}else{g("t").textContent=m;finE(i)}}
+function et(m,p,i){if(p<=m.length){g("t").textContent=m.slice(0,p)+"|";t2=setTimeout(()=>et(m,p+1,i),42)}else{g("t").textContent=m;finE(i)}}
 function finE(i){
   escB=0;const ind=g("i");
   if(i<esc.length-1)ind.textContent="Toca la carta para seguir leyendo ("+(i+1)+" de "+esc.length+")";
-  else{fin=1;vib();ind.className="in ff";ind.textContent="Hecho con todo mi amor, solo para ti. ✨♥";g("fzone").style.display="flex"}
+  else{fin=1;vib([50,70,50,70,120]);ind.className="in ff";ind.textContent="Hecho con todo mi amor, solo para ti. ✨♥";g("fzone").style.display="flex"}
 }
 function rst(e){
   e.stopPropagation();vib(25);fin=0;idx=0;litSet.clear();
