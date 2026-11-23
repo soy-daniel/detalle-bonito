@@ -17,9 +17,6 @@ canvas#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-in
 .mbar{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:14px;width:100%;max-width:360px;transition:opacity .4s}
 .mbtn{background:linear-gradient(135deg,rgba(88,24,62,.92),rgba(46,12,33,.92));backdrop-filter:blur(8px);border:1px solid rgba(255,214,239,.7);color:#fff5fa;padding:9px 22px;border-radius:30px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;letter-spacing:.5px;cursor:pointer;box-shadow:0 4px 18px rgba(249,168,212,.35);transition:transform .2s ease}
 .mbtn:active{transform:scale(.95)}
-.sbox{width:100%;min-height:80px;border-radius:14px;overflow:hidden;border:1.5px solid rgba(255,214,239,.35);background:#121212;box-shadow:0 10px 26px rgba(0,0,0,.75);transition:all .4s ease}
-.sbox.att{border-color:#fde047;box-shadow:0 0 24px rgba(253,224,71,.75);transform:scale(1.03)}
-.mhint{font-size:12.5px;color:#fef08a;font-style:italic;letter-spacing:.4px;animation:fd .5s ease}
 .card{position:relative;z-index:5;width:100%;max-width:440px;padding:26px 18px;border-radius:26px;background:linear-gradient(165deg,rgba(32,9,24,.94),rgba(18,4,14,.96));backdrop-filter:blur(12px);border:1px solid rgba(255,214,239,.32);box-shadow:0 20px 50px rgba(0,0,0,.8),inset 0 0 30px rgba(249,168,212,.1);transform-style:preserve-3d;transition:transform .18s ease-out}
 .glare{position:absolute;inset:0;border-radius:26px;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.12),transparent 60%);opacity:0;transition:opacity .4s}
 .card::before,.card::after{content:"❧";position:absolute;color:rgba(253,224,71,.55);font-size:20px}
@@ -76,22 +73,18 @@ pre{font-family:'Courier New',monospace;font-size:clamp(6.8px,2.35vw,11.5px);lin
 .snap-exit{display:none;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(20,5,16,.85);border:1px solid rgba(253,224,71,.6);color:#fef08a;padding:8px 18px;border-radius:20px;font-size:13px;font-style:italic}
 </style>
 </head>
-  lick="go(event)">
+<body onclick="go(event)">
 <div class="prog" id="bar"></div>
 <canvas id="bg"></canvas>
 <canvas id="fx"></canvas>
 <div class="mbar" id="mbar" onclick="event.stopPropagation()">
-  <a class="mbtn" id="bmus" href="https://spotify.com" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">🎵 Abrir canción en Spotify ↗</a>
-  <div class="sbox" id="sbox">
-    <iframe style="border-radius:12px" src="https://spotify.com" width="100%" height="80" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="eager"></iframe>
-  </div>
-  <div class="mhint" id="mhint">👆 Toca el botón ▶ dentro del cuadro de arriba para escuchar</div>
+  <button class="mbtn" id="bmus" onclick="togMus()">🎹 Encender melodía de piano</button>
 </div>
 <div class="card p1" id="p">
   <div class="glare" id="gl1"></div>
   <div class="script-top">Para ti, con todo mi corazón</div>
   <h2>Antes de que el mundo siga girando, quise crear este pequeño rincón solo para ti...</h2>
-  <p>Dale play a nuestra canción arriba, respira hondo y toca el medallón para descubrir lo que guardé aquí.</p>
+  <p>Enciende la melodía arriba, respira hondo y toca el medallón para descubrir lo que guardé aquí.</p>
   <div class="wax-wrap">
     <div class="ribbon-h" id="wrib"></div>
     <div class="wax-stage">
@@ -129,8 +122,70 @@ pre{font-family:'Courier New',monospace;font-size:clamp(6.8px,2.35vw,11.5px);lin
 <script>
 const g=id=>document.getElementById(id),cv=g("bg"),cx=cv.getContext("2d"),fv=g("fx"),fx=fv.getContext("2d"),R=Math.random;
 let W,H,pts=[],sp=[],stars=[],ripples=[],words=[],ini=0,fin=0,idx=0,escB=0,t1,t2,t3,tick=0,sx=0,sy=0,lastTrail=0,litSet=new Set();
+let actx=null,onM=false,mTimer=null,step=0,masterGain=null,delayNode=null;
+const pianoSeq=[
+  {b:[65.41,0,0,0,98.00,0,0,0],a:[130.81,196.00,261.63,329.63,392.00,329.63,261.63,196.00],m:[659.25,0,0,587.33,523.25,0,493.88,0]},
+  {b:[55.00,0,0,0,82.41,0,0,0],a:[110.00,164.81,220.00,261.63,329.63,261.63,220.00,164.81],m:[523.25,0,0,493.88,440.00,0,392.00,0]},
+  {b:[43.65,0,0,0,65.41,0,0,0],a:[87.31,130.81,174.61,220.00,261.63,220.00,174.61,130.81],m:[440.00,0,523.25,0,587.33,0,523.25,493.88]},
+  {b:[49.00,0,0,0,73.42,0,0,0],a:[98.00,146.83,196.00,246.94,293.66,246.94,196.00,146.83],m:[493.88,0,0,440.00,392.00,0,329.63,293.66]}
+];
+function initAudio(){
+  if(!actx){
+    actx=new(window.AudioContext||window.webkitAudioContext)();
+    masterGain=actx.createGain();masterGain.gain.setValueAtTime(0.9,actx.currentTime);
+    delayNode=actx.createDelay(1.0);delayNode.delayTime.setValueAtTime(0.34,actx.currentTime);
+    const fb=actx.createGain();fb.gain.setValueAtTime(0.3,actx.currentTime);
+    const wetFlt=actx.createBiquadFilter();wetFlt.type="lowpass";wetFlt.frequency.setValueAtTime(1250,actx.currentTime);
+    delayNode.connect(wetFlt);wetFlt.connect(fb);fb.connect(delayNode);
+    wetFlt.connect(masterGain);masterGain.connect(actx.destination);
+  }
+  if(actx.state==="suspended")actx.resume();
+}
+function playPianoNote(freq,dur,vel,isBass){
+  if(!actx||!onM||!freq)return;
+  const now=actx.currentTime;
+  const o1=actx.createOscillator(),o2=actx.createOscillator(),o3=actx.createOscillator();
+  o1.type="sine";o2.type="triangle";o3.type=isBass?"triangle":"sine";
+  o1.frequency.setValueAtTime(freq,now);
+  o2.frequency.setValueAtTime(freq*2,now);o2.detune.setValueAtTime(isBass?2:3,now);
+  o3.frequency.setValueAtTime(freq*3,now);o3.detune.setValueAtTime(-3,now);
+  const g1=actx.createGain(),g2=actx.createGain(),g3=actx.createGain(),env=actx.createGain();
+  g1.gain.setValueAtTime(1.0,now);
+  g2.gain.setValueAtTime(isBass?0.55:0.32,now);g2.gain.exponentialRampToValueAtTime(0.01,now+dur*0.5);
+  g3.gain.setValueAtTime(isBass?0.24:0.12,now);g3.gain.exponentialRampToValueAtTime(0.001,now+dur*0.25);
+  const flt=actx.createBiquadFilter();flt.type="lowpass";
+  flt.frequency.setValueAtTime(isBass?Math.min(freq*7,900):Math.min(freq*5.5,3200),now);
+  flt.frequency.exponentialRampToValueAtTime(isBass?140:Math.max(freq*1.4,320),now+dur*0.85);
+  env.gain.setValueAtTime(0.0001,now);
+  env.gain.linearRampToValueAtTime(vel,now+(isBass?0.018:0.012));
+  env.gain.exponentialRampToValueAtTime(vel*0.42,now+0.32);
+  env.gain.exponentialRampToValueAtTime(0.0001,now+dur);
+  o1.connect(g1);o2.connect(g2);o3.connect(g3);
+  g1.connect(flt);g2.connect(flt);g3.connect(flt);
+  flt.connect(env);env.connect(masterGain);
+  if(!isBass)env.connect(delayNode);
+  o1.start(now);o2.start(now);o3.start(now);
+  o1.stop(now+dur+0.05);o2.stop(now+dur+0.05);o3.stop(now+dur+0.05);
+}
+function startMusic(){
+  initAudio();
+  if(onM)return;
+  onM=true;g("bmus").textContent="⏸ Pausar melodía de piano";
+  clearInterval(mTimer);
+  const tickNote=()=>{
+    if(!onM)return;
+    const comp=Math.floor(step/8)%pianoSeq.length,pos=step%8,row=pianoSeq[comp];
+    if(row.b[pos]>0)playPianoNote(row.b[pos],4.2,0.24,true);
+    playPianoNote(row.a[pos],2.4,0.085,pos<2);
+    if(row.m[pos]>0)playPianoNote(row.m[pos],2.8,0.095,false);
+    step++;
+  };
+  tickNote();mTimer=setInterval(tickNote,450);
+}
+function stopMusic(){onM=false;clearInterval(mTimer);g("bmus").textContent="🎹 Encender melodía de piano";}
+function togMus(){if(onM)stopMusic();else startMusic();}
+function highlightPlayer(){startMusic();}
 const sweetWords=new Array("Eres magia ✨","Qué bonita eres ♥","Mi lugar favorito","Pensando en ti","Contigo todo es mejor","Eres luz 🌟","Tan especial ♥","Mi casualidad favorita");
-function highlightPlayer(){const sb=g('sbox');sb.classList.remove('att');void sb.offsetWidth;sb.classList.add('att');setTimeout(()=>sb.classList.remove('att'),2200);}
 function vib(p){if(navigator.vibrate)try{navigator.vibrate(p)}catch(e){}}
 function rz(){W=cv.width=fv.width=innerWidth;H=cv.height=fv.height=innerHeight}onresize=rz;rz();
 for(let j=0;j<65;j++)pts.push({x:R()*W,y:R()*H,r:R()*2+.5,v:R()*.3+.08,a:R()*6.28,t:j%4});
@@ -244,7 +299,7 @@ const f4=[
 "      .-+*#%@@%*:@:*%@@%#*+-.      ",
 "          ..:--==#==--:..          "
 ].join("\n");
-  const f5=[
+const f5=[
 "        *        .        *        ",
 "     .      .:+*#%@%#*+:.      .   ",
 "         .:%@@%#*===*#%@@%:.       ",
@@ -302,4 +357,5 @@ function rst(e){e.stopPropagation();fin=0;idx=0;litSet.clear();g("scnt").textCon
 </script>
 </body>
 </html>
+
 
