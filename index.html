@@ -95,7 +95,7 @@ function buildPianoWav(){
   return URL.createObjectURL(new Blob(new Array(ab),{type:"audio/wav"}));
 }
 function startMusic(){try{if(!wavAudio){wavAudio=new Audio(buildPianoWav());wavAudio.loop=true;wavAudio.volume=0.85;}if(!onM)wavAudio.play().then(()=>{onM=true;g("bmus").textContent="⏸ Pausar piano romántico";}).catch(()=>{});}catch(e){}}
-function togMus(){vib(25);if(onM&&wavAudio){wavAudio.pause();onM=false;g("bmus").textContent="🎹 Encender piano romántico";}else startMusic();}
+function togMus(){vib(25);if(onM&&wavAudio){wavAudio.pause();onM=false;g("bmus").textContent="🎹 Encender piano";}else startMusic();}
 const sweetWords=new Array("Eres magia ✨","Qué bonita eres ♥","Mi lugar favorito","Pensando en ti","Contigo todo es mejor","Eres luz 🌟","Tan especial ♥","Mi casualidad favorita");
 const vib=p=>{if(navigator.vibrate)try{navigator.vibrate(p)}catch(e){}};
 const rz=()=>{W=cv.width=fv.width=innerWidth;H=cv.height=fv.height=innerHeight};onresize=rz;rz();
