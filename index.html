@@ -119,44 +119,56 @@ const g=id=>document.getElementById(id),cv=g("bg"),cx=cv.getContext("2d"),fv=g("
 let W,H,pts=[],sp=[],stars=[],ripples=[],words=[],ini=0,fin=0,idx=0,escB=0,t1,t2,t3,tick=0,sx=0,sy=0,lastTrail=0,litSet=new Set();
 let actx=null,onM=false,mTimer=null,step=0,masterGain=null,delayNode=null;
 const pianoSeq=[
-  {b:[65.41,0,0,0,98.00,0,0,0],a:[130.81,196.00,246.94,261.63,329.63,261.63,246.94,196.00],m:[659.25,0,587.33,523.25,493.88,523.25,659.25,0]},
-  {b:[55.00,0,0,0,82.41,0,0,0],a:[110.00,164.81,220.00,246.94,261.63,246.94,220.00,164.81],m:[587.33,0,523.25,493.88,440.00,0,392.00,440.00]},
-  {b:[43.65,0,0,0,65.41,0,0,0],a:[87.31,130.81,174.61,220.00,261.63,220.00,174.61,130.81],m:[523.25,0,493.88,440.00,523.25,587.33,659.25,0]},
-  {b:[49.00,0,0,0,73.42,0,0,0],a:[98.00,146.83,196.00,246.94,293.66,246.94,196.00,146.83],m:[587.33,0,523.25,493.88,440.00,392.00,329.63,392.00]},
-  {b:[65.41,0,0,0,98.00,0,0,0],a:[130.81,196.00,246.94,329.63,392.00,329.63,246.94,196.00],m:[783.99,0,659.25,587.33,659.25,0,523.25,0]},
-  {b:[55.00,0,0,0,82.41,0,0,0],a:[110.00,164.81,220.00,261.63,329.63,261.63,220.00,164.81],m:[659.25,0,587.33,523.25,493.88,440.00,392.00,0]},
-  {b:[43.65,0,0,0,65.41,0,0,0],a:[87.31,130.81,174.61,220.00,261.63,220.00,174.61,130.81],m:[440.00,493.88,523.25,0,587.33,523.25,493.88,440.00]},
-  {b:[49.00,0,0,0,65.41,0,0,0],a:[98.00,146.83,196.00,246.94,261.63,246.94,196.00,146.83],m:[493.88,0,440.00,392.00,329.63,0,293.66,261.63]}
+  {b:[130.81,0,0,0,196.00,0,0,0],a:[261.63,329.63,392.00,493.88,523.25,493.88,392.00,329.63],m:[659.25,0,587.33,523.25,493.88,523.25,659.25,0]},
+  {b:[110.00,0,0,0,164.81,0,0,0],a:[220.00,261.63,329.63,392.00,440.00,392.00,329.63,261.63],m:[587.33,0,523.25,493.88,440.00,0,392.00,440.00]},
+  {b:[87.31,0,0,0,130.81,0,0,0], a:[174.61,220.00,261.63,349.23,440.00,349.23,261.63,220.00],m:[523.25,0,493.88,440.00,523.25,587.33,659.25,0]},
+  {b:[98.00,0,0,0,146.83,0,0,0], a:[196.00,246.94,293.66,392.00,493.88,392.00,293.66,246.94],m:[587.33,0,523.25,493.88,440.00,392.00,329.63,392.00]},
+  {b:[130.81,0,0,0,196.00,0,0,0],a:[261.63,329.63,392.00,493.88,523.25,493.88,392.00,329.63],m:[783.99,0,659.25,587.33,659.25,0,523.25,0]},
+  {b:[110.00,0,0,0,164.81,0,0,0],a:[220.00,261.63,329.63,392.00,440.00,392.00,329.63,261.63],m:[659.25,0,587.33,523.25,493.88,440.00,392.00,0]},
+  {b:[87.31,0,0,0,130.81,0,0,0], a:[174.61,220.00,261.63,349.23,440.00,349.23,261.63,220.00],m:[440.00,493.88,523.25,0,587.33,523.25,493.88,440.00]},
+  {b:[98.00,0,0,0,130.81,0,0,0], a:[196.00,246.94,293.66,392.00,523.25,392.00,293.66,246.94],m:[493.88,0,440.00,392.00,329.63,0,293.66,261.63]}
 ];
 
 function initAudio(){
   if(!actx){
     actx=new(window.AudioContext||window.webkitAudioContext)();
-    masterGain=actx.createGain();masterGain.gain.setValueAtTime(0.92,actx.currentTime);
-    delayNode=actx.createDelay(1.0);delayNode.delayTime.setValueAtTime(0.38,actx.currentTime);
-    const fb=actx.createGain();fb.gain.setValueAtTime(0.35,actx.currentTime);
-    const wetFlt=actx.createBiquadFilter();wetFlt.type="lowpass";wetFlt.frequency.setValueAtTime(1180,actx.currentTime);
+    const comp=actx.createDynamicsCompressor();
+    comp.threshold.setValueAtTime(-18,actx.currentTime);
+    comp.knee.setValueAtTime(20,actx.currentTime);
+    comp.ratio.setValueAtTime(6,actx.currentTime);
+    comp.attack.setValueAtTime(0.01,actx.currentTime);
+    comp.release.setValueAtTime(0.25,actx.currentTime);
+    masterGain=actx.createGain();masterGain.gain.setValueAtTime(0.65,actx.currentTime);
+    delayNode=actx.createDelay(1.0);delayNode.delayTime.setValueAtTime(0.36,actx.currentTime);
+    const fb=actx.createGain();fb.gain.setValueAtTime(0.26,actx.currentTime);
+    const wetFlt=actx.createBiquadFilter();wetFlt.type="lowpass";wetFlt.frequency.setValueAtTime(1100,actx.currentTime);
     delayNode.connect(wetFlt);wetFlt.connect(fb);fb.connect(delayNode);
-    wetFlt.connect(masterGain);masterGain.connect(actx.destination);
+    wetFlt.connect(comp);masterGain.connect(comp);comp.connect(actx.destination);
   }
   if(actx.state==="suspended")actx.resume();
 }
 
 function playPianoNote(freq,dur,vel,isBass){
   if(!actx||!onM||!freq)return;
-  const now=actx.currentTime,o1=actx.createOscillator(),o2=actx.createOscillator(),o3=actx.createOscillator();
-  o1.type="sine";o2.type="triangle";o3.type=isBass?"triangle":"sine";
-  o1.frequency.setValueAtTime(freq,now);o2.frequency.setValueAtTime(freq*2,now);o3.frequency.setValueAtTime(freq*3,now);
-  o2.detune.setValueAtTime(isBass?2:3.5,now);o3.detune.setValueAtTime(-3.5,now);
-  const g1=actx.createGain(),g2=actx.createGain(),g3=actx.createGain(),env=actx.createGain(),flt=actx.createBiquadFilter();
-  g1.gain.setValueAtTime(1.0,now);g2.gain.setValueAtTime(isBass?0.58:0.3,now);g3.gain.setValueAtTime(isBass?0.24:0.1,now);
-  g2.gain.exponentialRampToValueAtTime(0.01,now+dur*0.52);g3.gain.exponentialRampToValueAtTime(0.001,now+dur*0.25);
-  flt.type="lowpass";flt.frequency.setValueAtTime(isBass?880:2900,now);flt.frequency.exponentialRampToValueAtTime(isBass?130:300,now+dur*0.88);
-  env.gain.setValueAtTime(0.0001,now);env.gain.linearRampToValueAtTime(vel,now+0.018);
-  env.gain.exponentialRampToValueAtTime(vel*0.45,now+0.36);env.gain.exponentialRampToValueAtTime(0.0001,now+dur);
-  o1.connect(g1);o2.connect(g2);o3.connect(g3);g1.connect(flt);g2.connect(flt);g3.connect(flt);
-  flt.connect(env);env.connect(masterGain);if(!isBass)env.connect(delayNode);
-  o1.start(now);o2.start(now);o3.start(now);o1.stop(now+dur+0.05);o2.stop(now+dur+0.05);o3.stop(now+dur+0.05);
+  const now=actx.currentTime;
+  const o1=actx.createOscillator(),o2=actx.createOscillator();
+  o1.type="sine";o2.type="sine";
+  o1.frequency.setValueAtTime(freq,now);
+  o2.frequency.setValueAtTime(freq*2,now);o2.detune.setValueAtTime(2,now);
+  const g1=actx.createGain(),g2=actx.createGain(),env=actx.createGain();
+  g1.gain.setValueAtTime(1.0,now);
+  g2.gain.setValueAtTime(isBass?0.22:0.16,now);
+  g2.gain.exponentialRampToValueAtTime(0.001,now+dur*0.35);
+  env.gain.setValueAtTime(0.0001,now);
+  env.gain.linearRampToValueAtTime(vel,now+0.025);
+  env.gain.exponentialRampToValueAtTime(vel*0.38,now+0.35);
+  env.gain.exponentialRampToValueAtTime(0.0001,now+dur);
+  o1.connect(g1);o2.connect(g2);
+  g1.connect(env);g2.connect(env);
+  env.connect(masterGain);
+  if(!isBass)env.connect(delayNode);
+  o1.start(now);o2.start(now);
+  o1.stop(now+dur+0.05);o2.stop(now+dur+0.05);
 }
 
 function startMusic(){
@@ -164,12 +176,12 @@ function startMusic(){
   const tickNote=()=>{
     if(!onM)return;
     const comp=Math.floor(step/8)%pianoSeq.length,pos=step%8,row=pianoSeq[comp];
-    if(row.b[pos]>0)playPianoNote(row.b[pos],4.6,0.26,true);
-    playPianoNote(row.a[pos],2.6,0.08,pos<2);
-    if(row.m[pos]>0)playPianoNote(row.m[pos],3.1,0.11,false);
+    if(row.b[pos]>0)playPianoNote(row.b[pos],4.2,0.22,true);
+    playPianoNote(row.a[pos],2.4,0.085,false);
+    if(row.m[pos]>0)playPianoNote(row.m[pos],2.9,0.12,false);
     step++;
   };
-  tickNote();mTimer=setInterval(tickNote,470);
+  tickNote();mTimer=setInterval(tickNote,480);
 }
 function togMus(){vib(25);if(onM){onM=false;clearInterval(mTimer);g("bmus").textContent="🎹 Encender piano romántico";}else startMusic();}
 
@@ -196,10 +208,11 @@ function tilt(x,y){
 }
 document.addEventListener("pointermove",e=>{followHearts(e.clientX,e.clientY);tilt(e.clientX,e.clientY)},{passive:true});
 document.addEventListener("pointerdown",e=>{followHearts(e.clientX,e.clientY)},{passive:true});
-window.addEventListener("touchstart",e=>{if(e.touches.length){const t=e.touches[0];sx=t.clientX;sy=t.clientY;followHearts(sx,sy)}},{passive:true});
-window.addEventListener("touchmove",e=>{if(e.touches.length){const t=e.touches[0];followHearts(t.clientX,t.clientY);tilt(t.clientX,t.clientY)}},{passive:true});
-window.addEventListener("touchend",e=>{if(!ini||!e.changedTouches.length)return;const t=e.changedTouches[0],dx2=t.clientX-sx,dy2=t.clientY-sy;if(Math.abs(dx2)>55&&Math.abs(dx2)>Math.abs(dy2)*1.3){if(dx2<0&&idx<esc.length-1){vib(25);idx++;ver(idx);chk(W/2,H/2,0)}else if(dx2>0&&idx>0){vib(25);fin=0;g("fzone").style.display="none";idx--;ver(idx);chk(W/2,H/2,0)}}});
-function pulseArt(e){e.stopPropagation();vib([45,65,45]);const ab=g("abox");ab.classList.remove("pulse");void ab.offsetWidth;ab.classList.add("pulse");setTimeout(()=>ab.classList.remove("pulse"),650);chk(e.clientX||W/2,e.clientY||H/2,1)}
+window.addEventListener("touchstart",e=>{if(e.touches.length){const t=e.touches;sx=t.clientX;sy=t.clientY;followHearts(sx,sy)}},{passive:true});
+window.addEventListener("touchmove",e=>{if(e.touches.length){const t=e.touches;followHearts(t.clientX,t.clientY);tilt(t.clientX,t.clientY)}},{passive:true});
+window.addEventListener("touchend",e=>{if(!ini||!e.changedTouches.length)return;const t=e.changedTouches,dx2=t.clientX-sx,dy2=t.clientY-sy;if(Math.abs(dx2)>55&&Math.abs(dx2)>Math.abs(dy2)*1.3){if(dx2<0&&idx<esc.length-1){vib(25);idx++;ver(idx);chk(W/2,H/2,0)}else if(dx2>0&&idx>0){vib(25);fin=0;g("fzone").style.display="none";idx--;ver(idx);chk(W/2,H/2,0)}}});
+function pulseArt(e){e.stopPropagation();vib();const ab=g("abox");ab.classList.remove("pulse");void ab.offsetWidth;ab.classList.add("pulse");setTimeout(()=>ab.classList.remove("pulse"),650);chk(e.clientX||W/2,e.clientY||H/2,1)}
+
 const deseos=[
   "«Deseo que nunca te falten motivos para sonreír con esa luz tan bonita que tienes.» ✨",
   "«Deseo que la vida te devuelva multiplicada toda la calidez y ternura que entregas.» ♥",
