@@ -94,7 +94,7 @@ function buildPianoWav(){
   for(let i=0;i<ts;i++){const s=Math.max(-0.92,Math.min(0.92,fv2.getFloat32(i*4,true)));dv.setInt16(44+i*2,s<0?s*32768:s*32767,true);}
   return URL.createObjectURL(new Blob(new Array(ab),{type:"audio/wav"}));
 }
-function startMusic(){try{if(!wavAudio){wavAudio=new Audio(buildPianoWav());wavAudio.loop=true;wavAudio.volume=0.85;}if(!onM)wavAudio.play().then(()=>{onM=true;g("bmus").textContent="⏸ Pausar piano romántico";}).catch(()=>{});}catch(e){}}
+function startMusic(){try{if(!wavAudio){wavAudio=new Audio(buildPianoWav());wavAudio.loop=true;wavAudio.volume=0.85;}if(!onM)wavAudio.play().then(()=>{onM=true;g("bmus").textContent="⏸ Pausar piano";}).catch(()=>{});}catch(e){}}
 function togMus(){vib(25);if(onM&&wavAudio){wavAudio.pause();onM=false;g("bmus").textContent="🎹 Encender piano";}else startMusic();}
 const sweetWords=new Array("Eres magia ✨","Qué bonita eres ♥","Mi lugar favorito","Pensando en ti","Contigo todo es mejor","Eres luz 🌟","Tan especial ♥","Mi casualidad favorita");
 const vib=p=>{if(navigator.vibrate)try{navigator.vibrate(p)}catch(e){}};
