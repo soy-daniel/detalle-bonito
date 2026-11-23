@@ -41,6 +41,8 @@ h2{font-family:'Playfair Display',Georgia,serif;font-weight:500;font-size:clamp(
 .wax.broken,.wax-ring.broken,.wax-glow.broken{transform:scale(1.85);opacity:0}
 .ribbon-h.broken{transform:scaleX(0);opacity:0}
 @keyframes hb{0%,100%{transform:scale(1)}15%{transform:scale(1.06)}30%{transform:scale(1)}45%{transform:scale(1.03)}}
+.wax-txt{font-family:'Playfair Display',serif;font-style:italic;font-size:13px;letter-spacing:1.8px;color:#fde047;text-shadow:0 0 10px rgba(253,224,71,.35)}
+.c1{display:none;flex-direction:column;align-items:center}
   .art-box{position:relative;display:flex;align-items:center;justify-content:center;min-height:185px;width:100%;margin-bottom:8px;cursor:pointer;overflow:hidden;transition:transform .3s ease}
 .art-box::before{content:"";position:absolute;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(255,190,230,.24),rgba(253,224,71,.06) 45%,transparent 70%);pointer-events:none}
 .art-box.pulse{transform:scale(1.08)}
@@ -71,12 +73,12 @@ pre{font-family:'Courier New',monospace;font-size:clamp(6.8px,2.35vw,11.5px);lin
 .snap-exit{display:none;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(20,5,16,.85);border:1px solid rgba(253,224,71,.6);color:#fef08a;padding:8px 18px;border-radius:20px;font-size:13px;font-style:italic}
 </style>
 </head>
-<body onclick="go(event)">
+  <body onclick="go(event)">
 <div class="prog" id="bar"></div>
 <canvas id="bg"></canvas>
 <canvas id="fx"></canvas>
 <div class="mbar" id="mbar" onclick="event.stopPropagation()">
-  <button class="mbtn" id="bmus" onclick="togMus()">🎹 Encender melodía de piano</button>
+  <button class="mbtn" id="bmus" onclick="togMus()">🎹 Encender melodía romántica</button>
 </div>
 <div class="card p1" id="p">
   <div class="glare" id="gl1"></div>
@@ -122,18 +124,22 @@ const g=id=>document.getElementById(id),cv=g("bg"),cx=cv.getContext("2d"),fv=g("
 let W,H,pts=[],sp=[],stars=[],ripples=[],words=[],ini=0,fin=0,idx=0,escB=0,t1,t2,t3,tick=0,sx=0,sy=0,lastTrail=0,litSet=new Set();
 let actx=null,onM=false,mTimer=null,step=0,masterGain=null,delayNode=null;
 const pianoSeq=[
-  {b:[65.41,0,0,0,98.00,0,0,0],a:[130.81,196.00,261.63,329.63,392.00,329.63,261.63,196.00],m:[659.25,0,0,587.33,523.25,0,493.88,0]},
-  {b:[55.00,0,0,0,82.41,0,0,0],a:[110.00,164.81,220.00,261.63,329.63,261.63,220.00,164.81],m:[523.25,0,0,493.88,440.00,0,392.00,0]},
-  {b:[43.65,0,0,0,65.41,0,0,0],a:[87.31,130.81,174.61,220.00,261.63,220.00,174.61,130.81],m:[440.00,0,523.25,0,587.33,0,523.25,493.88]},
-  {b:[49.00,0,0,0,73.42,0,0,0],a:[98.00,146.83,196.00,246.94,293.66,246.94,196.00,146.83],m:[493.88,0,0,440.00,392.00,0,329.63,293.66]}
+  {b:[65.41,0,0,0,98.00,0,0,0],a:[130.81,196.00,246.94,261.63,329.63,261.63,246.94,196.00],m:[659.25,0,587.33,523.25,493.88,523.25,659.25,0]},
+  {b:[55.00,0,0,0,82.41,0,0,0],a:[110.00,164.81,220.00,246.94,261.63,246.94,220.00,164.81],m:[587.33,0,523.25,493.88,440.00,0,392.00,440.00]},
+  {b:[43.65,0,0,0,65.41,0,0,0],a:[87.31,130.81,174.61,220.00,261.63,220.00,174.61,130.81],m:[523.25,0,493.88,440.00,523.25,587.33,659.25,0]},
+  {b:[49.00,0,0,0,73.42,0,0,0],a:[98.00,146.83,196.00,246.94,293.66,246.94,196.00,146.83],m:[587.33,0,523.25,493.88,440.00,392.00,329.63,392.00]},
+  {b:[65.41,0,0,0,98.00,0,0,0],a:[130.81,196.00,246.94,329.63,392.00,329.63,246.94,196.00],m:[783.99,0,659.25,587.33,659.25,0,523.25,0]},
+  {b:[55.00,0,0,0,82.41,0,0,0],a:[110.00,164.81,220.00,261.63,329.63,261.63,220.00,164.81],m:[659.25,0,587.33,523.25,493.88,440.00,392.00,0]},
+  {b:[43.65,0,0,0,65.41,0,0,0],a:[87.31,130.81,174.61,220.00,261.63,220.00,174.61,130.81],m:[440.00,493.88,523.25,0,587.33,523.25,493.88,440.00]},
+  {b:[49.00,0,0,0,65.41,0,0,0],a:[98.00,146.83,196.00,246.94,261.63,246.94,196.00,146.83],m:[493.88,0,440.00,392.00,329.63,0,293.66,261.63]}
 ];
 function initAudio(){
   if(!actx){
     actx=new(window.AudioContext||window.webkitAudioContext)();
-    masterGain=actx.createGain();masterGain.gain.setValueAtTime(0.9,actx.currentTime);
-    delayNode=actx.createDelay(1.0);delayNode.delayTime.setValueAtTime(0.34,actx.currentTime);
-    const fb=actx.createGain();fb.gain.setValueAtTime(0.3,actx.currentTime);
-    const wetFlt=actx.createBiquadFilter();wetFlt.type="lowpass";wetFlt.frequency.setValueAtTime(1250,actx.currentTime);
+    masterGain=actx.createGain();masterGain.gain.setValueAtTime(0.92,actx.currentTime);
+    delayNode=actx.createDelay(1.0);delayNode.delayTime.setValueAtTime(0.38,actx.currentTime);
+    const fb=actx.createGain();fb.gain.setValueAtTime(0.35,actx.currentTime);
+    const wetFlt=actx.createBiquadFilter();wetFlt.type="lowpass";wetFlt.frequency.setValueAtTime(1180,actx.currentTime);
     delayNode.connect(wetFlt);wetFlt.connect(fb);fb.connect(delayNode);
     wetFlt.connect(masterGain);masterGain.connect(actx.destination);
   }
@@ -145,18 +151,18 @@ function playPianoNote(freq,dur,vel,isBass){
   const o1=actx.createOscillator(),o2=actx.createOscillator(),o3=actx.createOscillator();
   o1.type="sine";o2.type="triangle";o3.type=isBass?"triangle":"sine";
   o1.frequency.setValueAtTime(freq,now);
-  o2.frequency.setValueAtTime(freq*2,now);o2.detune.setValueAtTime(isBass?2:3,now);
-  o3.frequency.setValueAtTime(freq*3,now);o3.detune.setValueAtTime(-3,now);
+  o2.frequency.setValueAtTime(freq*2,now);o2.detune.setValueAtTime(isBass?2:3.5,now);
+  o3.frequency.setValueAtTime(freq*3,now);o3.detune.setValueAtTime(-3.5,now);
   const g1=actx.createGain(),g2=actx.createGain(),g3=actx.createGain(),env=actx.createGain();
   g1.gain.setValueAtTime(1.0,now);
-  g2.gain.setValueAtTime(isBass?0.55:0.32,now);g2.gain.exponentialRampToValueAtTime(0.01,now+dur*0.5);
-  g3.gain.setValueAtTime(isBass?0.24:0.12,now);g3.gain.exponentialRampToValueAtTime(0.001,now+dur*0.25);
+  g2.gain.setValueAtTime(isBass?0.58:0.3,now);g2.gain.exponentialRampToValueAtTime(0.01,now+dur*0.52);
+  g3.gain.setValueAtTime(isBass?0.24:0.1,now);g3.gain.exponentialRampToValueAtTime(0.001,now+dur*0.25);
   const flt=actx.createBiquadFilter();flt.type="lowpass";
-  flt.frequency.setValueAtTime(isBass?Math.min(freq*7,900):Math.min(freq*5.5,3200),now);
-  flt.frequency.exponentialRampToValueAtTime(isBass?140:Math.max(freq*1.4,320),now+dur*0.85);
+  flt.frequency.setValueAtTime(isBass?Math.min(freq*7,880):Math.min(freq*5,2900),now);
+  flt.frequency.exponentialRampToValueAtTime(isBass?130:Math.max(freq*1.3,300),now+dur*0.88);
   env.gain.setValueAtTime(0.0001,now);
-  env.gain.linearRampToValueAtTime(vel,now+(isBass?0.018:0.012));
-  env.gain.exponentialRampToValueAtTime(vel*0.42,now+0.32);
+  env.gain.linearRampToValueAtTime(vel,now+(isBass?0.02:0.015));
+  env.gain.exponentialRampToValueAtTime(vel*0.45,now+0.36);
   env.gain.exponentialRampToValueAtTime(0.0001,now+dur);
   o1.connect(g1);o2.connect(g2);o3.connect(g3);
   g1.connect(flt);g2.connect(flt);g3.connect(flt);
@@ -168,19 +174,19 @@ function playPianoNote(freq,dur,vel,isBass){
 function startMusic(){
   initAudio();
   if(onM)return;
-  onM=true;g("bmus").textContent="⏸ Pausar melodía de piano";
+  onM=true;g("bmus").textContent="⏸ Pausar melodía romántica";
   clearInterval(mTimer);
   const tickNote=()=>{
     if(!onM)return;
     const comp=Math.floor(step/8)%pianoSeq.length,pos=step%8,row=pianoSeq[comp];
-    if(row.b[pos]>0)playPianoNote(row.b[pos],4.2,0.24,true);
-    playPianoNote(row.a[pos],2.4,0.085,pos<2);
-    if(row.m[pos]>0)playPianoNote(row.m[pos],2.8,0.095,false);
+    if(row.b[pos]>0)playPianoNote(row.b[pos],4.6,0.25,true);
+    playPianoNote(row.a[pos],2.6,0.08,pos<2);
+    if(row.m[pos]>0)playPianoNote(row.m[pos],3.1,0.105,false);
     step++;
   };
-  tickNote();mTimer=setInterval(tickNote,450);
+  tickNote();mTimer=setInterval(tickNote,470);
 }
-function stopMusic(){onM=false;clearInterval(mTimer);g("bmus").textContent="🎹 Encender melodía de piano";}
+function stopMusic(){onM=false;clearInterval(mTimer);g("bmus").textContent="🎹 Encender melodía romántica";}
 function togMus(){if(onM)stopMusic();else startMusic();}
 const sweetWords=["Eres magia ✨","Qué bonita eres ♥","Mi lugar favorito","Pensando en ti","Contigo todo es mejor","Eres luz 🌟","Tan especial ♥","Mi casualidad favorita"];
 function vib(p){if(navigator.vibrate)try{navigator.vibrate(p)}catch(e){}}
@@ -208,7 +214,7 @@ document.addEventListener("pointerdown",e=>{followHearts(e.clientX,e.clientY)},{
 window.addEventListener("touchstart",e=>{if(e.touches.length){const t=e.touches;sx=t.clientX;sy=t.clientY;followHearts(sx,sy)}},{passive:true});
 window.addEventListener("touchmove",e=>{if(e.touches.length){const t=e.touches;followHearts(t.clientX,t.clientY);tilt(t.clientX,t.clientY)}},{passive:true});
 window.addEventListener("touchend",e=>{if(!ini||!e.changedTouches.length)return;const t=e.changedTouches,dx2=t.clientX-sx,dy2=t.clientY-sy;if(Math.abs(dx2)>55&&Math.abs(dx2)>Math.abs(dy2)*1.3){if(dx2<0&&idx<esc.length-1){idx++;ver(idx);chk(W/2,H/2,0)}else if(dx2>0&&idx>0){fin=0;g("fzone").style.display="none";idx--;ver(idx);chk(W/2,H/2,0)}}});
-function pulseArt(e){e.stopPropagation();vib([40,60,40]);const ab=g("abox");ab.classList.remove("pulse");void ab.offsetWidth;ab.classList.add("pulse");setTimeout(()=>ab.classList.remove("pulse"),650);chk(e.clientX||W/2,e.clientY||H/2,1)}
+function pulseArt(e){e.stopPropagation();vib();const ab=g("abox");ab.classList.remove("pulse");void ab.offsetWidth;ab.classList.add("pulse");setTimeout(()=>ab.classList.remove("pulse"),650);chk(e.clientX||W/2,e.clientY||H/2,1)}
 const deseos=[
   "«Deseo que nunca te falten motivos para sonreír con esa luz tan bonita que tienes.» ✨",
   "«Deseo que la vida te devuelva multiplicada toda la calidez y ternura que entregas.» ♥",
@@ -227,7 +233,7 @@ function litStar(n,e){
     el.classList.toggle("lit",k===n||litSet.size===5);
   }
   if(litSet.size===5){
-    vib([50,60,50,60,120]);
+    vib();
     g("scnt").textContent="✨ ¡Encendiste toda la constelación! ✨";
     g("smsg").textContent=deseos[n]+" — Que todos estos deseos te acompañen siempre. 🌌♥";
     chk(W/2,H/2,1);
@@ -273,21 +279,20 @@ function go(e){
   if(e)chk(e.clientX||W/2,e.clientY||H/2,0);
   if(fin)return;
   if(!ini){
-    ini=1;vib([60,80,100]);g("wax").classList.add("broken");g("wring").classList.add("broken");g("wglow").classList.add("broken");g("wrib").classList.add("broken");
+    ini=1;vib();g("wax").classList.add("broken");g("wring").classList.add("broken");g("wglow").classList.add("broken");g("wrib").classList.add("broken");
     startMusic();
     setTimeout(()=>{g("p").style.display="none";g("c").style.display="flex";ver(0)},450);
     return;
   }
-  if(escB){clearInterval(t1);clearTimeout(t2);const l=g("l"),c=esc[idx];l.textContent=c.f[0];l.className=c.c;anF(idx);g("t").innerHTML=c.m;finE(idx);return}
+  if(escB){clearInterval(t1);clearTimeout(t2);const l=g("l"),c=esc[idx];l.textContent=c.f;l.className=c.c;anF(idx);g("t").innerHTML=c.m;finE(idx);return}
   if(idx<esc.length-1){vib(25);idx++;ver(idx)}
 }
 function anF(i){clearInterval(t3);let f=0;t3=setInterval(()=>{f=(f+1)%2;g("l").textContent=esc[i].f[f]},850)}
-function ver(i){clearInterval(t1);clearTimeout(t2);clearInterval(t3);escB=1;const c=esc[i];g("bar").style.width=((i+1)/esc.length*100)+"%";document.body.style.background="radial-gradient(circle at 50% 30%,"+c.b+")";const l=g("l"),tx=g("t"),ind=g("i");l.className="";l.textContent="";tx.innerHTML="";ind.className="in";ind.textContent="";const ln=c.f[0].split("\n");let k=0;t1=setInterval(()=>{if(k<ln.length)l.textContent+=(k?"\n":"")+ln[k++];else{clearInterval(t1);l.className=c.c;anF(i);et(c.m,0,i)}},75)}
+function ver(i){clearInterval(t1);clearTimeout(t2);clearInterval(t3);escB=1;const c=esc[i];g("bar").style.width=((i+1)/esc.length*100)+"%";document.body.style.background="radial-gradient(circle at 50% 30%,"+c.b+")";const l=g("l"),tx=g("t"),ind=g("i");l.className="";l.textContent="";tx.innerHTML="";ind.className="in";ind.textContent="";const ln=c.f.split("\n");let k=0;t1=setInterval(()=>{if(k<ln.length)l.textContent+=(k?"\n":"")+ln[k++];else{clearInterval(t1);l.className=c.c;anF(i);et(c.m,0,i)}},75)}
 function et(m,p,i){if(p<=m.length){g("t").innerHTML=m.slice(0,p)+'<span class="cur">|</span>';t2=setTimeout(()=>et(m,p+1,i),65)}else{g("t").textContent=m;finE(i)}}
-function finE(i){escB=0;const ind=g("i");if(i<esc.length-1)ind.textContent="Toca la carta para seguir leyendo ("+(i+1)+" de "+esc.length+")";else{fin=1;vib([50,70,50,70,120]);document.body.style.cursor="default";ind.className="in ff";ind.textContent="Hecho con todo mi amor, solo para ti. ✨♥";g("fzone").style.display="flex"}}
+function finE(i){escB=0;const ind=g("i");if(i<esc.length-1)ind.textContent="Toca la carta para seguir leyendo ("+(i+1)+" de "+esc.length+")";else{fin=1;vib();document.body.style.cursor="default";ind.className="in ff";ind.textContent="Hecho con todo mi amor, solo para ti. ✨♥";g("fzone").style.display="flex"}}
 function rst(e){e.stopPropagation();fin=0;idx=0;litSet.clear();g("scnt").textContent="Constelación: 0 / 5 estrellas encendidas";g("smsg").textContent="Toca cada estrella de la constelación para revelar un deseo guardado para ti ✨";const btns=g("srow").children;for(let k=0;k<btns.length;k++)btns[k].classList.remove("lit","seen");document.body.style.cursor="pointer";g("fzone").style.display="none";ver(0)}
 </script>
 </body>
 </html>
-</body>
-</html>
+
