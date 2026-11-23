@@ -131,9 +131,10 @@ let wavAudio=null,onM=false;
   {b:new Array(174.61,0,0,0,130.81,0,0,0),a:new Array(174.61,220.00,261.63,349.23,440.00,349.23,261.63,220.00),m:new Array(440.00,493.88,523.25,0,587.33,523.25,493.88,440.00)},
   {b:new Array(146.83,0,0,0,130.81,0,0,0),a:new Array(196.00,246.94,293.66,392.00,523.25,392.00,293.66,246.94),m:new Array(493.88,0,440.00,392.00,329.63,0,293.66,261.63)}
 );
+function item(arr,idx){return Array.prototype.slice.call(arr,idx,idx+1).pop();}
 function buildPianoWav(){
   const sr=22050,beatDur=0.52,totalBeats=64,totalSamples=Math.floor(sr*beatDur*totalBeats);
-  const buf=new Float32Array(totalSamples);
+  const fBuf=new ArrayBuffer(totalSamples*4),fView=new DataView(fBuf);
   function addNote(freq,startSec,durSec,amp){
     if(!freq)return;
     const s0=Math.floor(startSec*sr),len=Math.floor(durSec*sr),w=2*Math.PI*freq/sr;
@@ -141,25 +142,22 @@ function buildPianoWav(){
       const k=s0+i;if(k>=totalSamples)break;
       const t=i/sr,att=Math.min(1,t/0.025),dec=Math.exp(-t*(3.2/durSec));
       const tone=Math.sin(w*i)+0.2*Math.sin(2*w*i)*Math.exp(-t*5)+0.05*Math.sin(3*w*i)*Math.exp(-t*9);
-      buf.set(new Float32Array(1).fill(buf.at(k)+tone*amp*att*dec),k);
+      fView.setFloat32(k*4,fView.getFloat32(k*4,true)+tone*amp*att*dec,true);
     }
   }
   for(let s=0;s<totalBeats;s++){
-    const row=pianoSeq.at(Math.floor(s/8)%pianoSeq.length),pos=s%8,st=s*beatDur;
-    if(row.b.at(pos))addNote(row.b.at(pos),st,2.1,0.16);
-    addNote(row.a.at(pos),st,1.1,0.065);
-    if(row.m.at(pos))addNote(row.m.at(pos),st,1.8,0.11);
+    const row=item(pianoSeq,Math.floor(s/8)%pianoSeq.length),pos=s%8,st=s*beatDur;
+    if(item(row.b,pos))addNote(item(row.b,pos),st,2.1,0.16);
+    addNote(item(row.a,pos),st,1.1,0.065);
+    if(item(row.m,pos))addNote(item(row.m,pos),st,1.8,0.11);
   }
   const d1=Math.floor(0.32*sr);
-  for(let i=d1;i<totalSamples;i++){
-    const v=buf.at(i)+buf.at(i-d1)*0.22;
-    buf.set(new Float32Array(1).fill(v),i);
-  }
+  for(let i=d1;i<totalSamples;i++)fView.setFloat32(i*4,fView.getFloat32(i*4,true)+fView.getFloat32((i-d1)*4,true)*0.22,true);
   const fade=Math.floor(0.25*sr);
   for(let i=0;i<fade;i++){
-    const k=i/fade;
-    buf.set(new Float32Array(1).fill(buf.at(i)*k),i);
-    buf.set(new Float32Array(1).fill(buf.at(totalSamples-1-i)*k),totalSamples-1-i);
+    const k=i/fade,j=totalSamples-1-i;
+    fView.setFloat32(i*4,fView.getFloat32(i*4,true)*k,true);
+    fView.setFloat32(j*4,fView.getFloat32(j*4,true)*k,true);
   }
   const dataBytes=totalSamples*2,ab=new ArrayBuffer(44+dataBytes),dv=new DataView(ab);
   const wr=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i))};
@@ -168,14 +166,16 @@ function buildPianoWav(){
   dv.setUint32(24,sr,true);dv.setUint32(28,sr*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);
   wr(36,"data");dv.setUint32(40,dataBytes,true);
   for(let i=0;i<totalSamples;i++){
-    const s=Math.max(-0.92,Math.min(0.92,buf.at(i)));
+    const s=Math.max(-0.92,Math.min(0.92,fView.getFloat32(i*4,true)));
     dv.setInt16(44+i*2,s<0?s*32768:s*32767,true);
   }
   return URL.createObjectURL(new Blob(new Array(ab),{type:"audio/wav"}));
 }
 function startMusic(){
-  if(!wavAudio){wavAudio=new Audio(buildPianoWav());wavAudio.loop=true;wavAudio.volume=0.85;}
-  if(!onM){wavAudio.play().then(()=>{onM=true;g("bmus").textContent="⏸ Pausar piano romántico";}).catch(()=>{});}
+  try{
+    if(!wavAudio){wavAudio=new Audio(buildPianoWav());wavAudio.loop=true;wavAudio.volume=0.85;}
+    if(!onM){wavAudio.play().then(()=>{onM=true;g("bmus").textContent="⏸ Pausar piano romántico";}).catch(()=>{});}
+  }catch(e){}
 }
 function togMus(){
   vib(25);
@@ -188,7 +188,7 @@ function rz(){W=cv.width=fv.width=innerWidth;H=cv.height=fv.height=innerHeight}o
 for(let j=0;j<55;j++)pts.push({x:R()*W,y:R()*H,r:R()*2+.5,v:R()*.3+.08,a:R()*6.28,t:j%4});
 function chk(x,y,big){
   ripples.push({x,y,r:6,l:1});
-  words.push({x:Math.min(Math.max(x,75),W-75),y:y-14,txt:sweetWords.at(Math.floor(R()*sweetWords.length)),l:1});
+  words.push({x:Math.min(Math.max(x,75),W-75),y:y-14,txt:item(sweetWords,Math.floor(R()*sweetWords.length)),l:1});
   const cnt=big?30:14;
   for(let k=0;k<cnt;k++){const a=R()*6.28,v=R()*(big?3.6:2.1)+.6;sp.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-.5,l:1,r:R()*2.2+1,t:k%3})}
 }
@@ -226,10 +226,10 @@ function litStar(n,e){
   if(litSet.size===5){
     vib(new Array(50,60,50,60,120));
     g("scnt").textContent="✨ ¡Encendiste toda la constelación! ✨";
-    g("smsg").textContent=deseos.at(n)+" — Que todos estos deseos te acompañen siempre. 🌌♥";
+    g("smsg").textContent=item(deseos,n)+" — Que todos estos deseos te acompañen siempre. 🌌♥";
     chk(W/2,H/2,1);
   }else{
-    g("smsg").textContent=deseos.at(n);
+    g("smsg").textContent=item(deseos,n);
     chk(e.clientX||W/2,e.clientY||H/2,0);
   }
 }
@@ -255,18 +255,18 @@ function drawHeart(c,x,y,s,col){
     p.y-=p.v;p.x+=Math.sin(p.a)*.25;if(p.y<-15){p.y=H+15;p.x=R()*W}
   });
   for(let i=ripples.length-1;i>=0;i--){
-    const rp=ripples.at(i);rp.r+=2.6;rp.l-=.022;
+    const rp=item(ripples,i);rp.r+=2.6;rp.l-=.022;
     if(rp.l<=0)ripples.splice(i,1);
     else{fx.beginPath();fx.arc(rp.x,rp.y,rp.r,0,6.28);fx.strokeStyle="rgba(253,224,71,"+(rp.l*.45)+")";fx.lineWidth=1.4;fx.stroke()}
   }
   for(let i=words.length-1;i>=0;i--){
-    const wd=words.at(i);wd.y-=.6;wd.l-=.014;
+    const wd=item(words,i);wd.y-=.6;wd.l-=.014;
     if(wd.l<=0)words.splice(i,1);
     else{fx.save();fx.font="italic 18px 'Cormorant Garamond',serif";fx.textAlign="center";fx.fillStyle="rgba(254,240,138,"+wd.l+")";fx.fillText(wd.txt,wd.x,wd.y);fx.restore()}
   }
   if(R()<.01&&stars.length<2)stars.push({x:R()*W*.85,y:R()*H*.35,vx:4+R()*3,vy:2.2+R()*1.4,l:1});
   for(let i=stars.length-1;i>=0;i--){
-    const st=stars.at(i);st.x+=st.vx;st.y+=st.vy;st.l-=.022;
+    const st=item(stars,i);st.x+=st.vx;st.y+=st.vy;st.l-=.022;
     if(st.l<=0)stars.splice(i,1);
     else{
       const gr=cx.createLinearGradient(st.x,st.y,st.x-st.vx*7,st.y-st.vy*7);
@@ -275,7 +275,7 @@ function drawHeart(c,x,y,s,col){
     }
   }
   for(let i=sp.length-1;i>=0;i--){
-    const s=sp.at(i);s.x+=s.vx;s.y+=s.vy;
+    const s=item(sp,i);s.x+=s.vx;s.y+=s.vy;
     if((s.l-=.018)<=0)sp.splice(i,1);
     else if(s.t===0)drawHeart(fx,s.x,s.y,s.r*2.4,"rgba(255,165,215,"+s.l+")");
     else if(s.t===1){fx.beginPath();fx.arc(s.x,s.y,s.r,0,6.28);fx.fillStyle="rgba(254,240,138,"+s.l+")";fx.fill()}
@@ -361,34 +361,33 @@ const esc=new Array(
   {b:"#1a143d,#08051a 65%,#030108",c:"m2",m:"Eres de esas personas bonitas que dejan huella en el alma y hacen que todo valga la pena. ♥",f:new Array(f3,f3.replace(/\*/g,"✦"))}
 );
 function go(e){
-  if(e){vib(12);chk(e.clientX||W/2,e.clientY||H/2,0);}
+  if(e){vib(15);chk(e.clientX||W/2,e.clientY||H/2,0);}
   if(fin)return;
   if(!ini){
-    ini=1;vib(new Array(60,80,100));
+    ini=1;vib(new Array(60,80,100));startMusic();
     g("wax").classList.add("broken");g("wring").classList.add("broken");
     g("wglow").classList.add("broken");g("wrib").classList.add("broken");
-    startMusic();
     setTimeout(()=>{g("p").style.display="none";g("c").style.display="flex";ver(0);},350);
     return;
   }
   if(escB){
     clearTimeout(t2);
-    const c=esc.at(idx);
-    g("l").textContent=c.f.at(0);
+    const c=item(esc,idx);
+    g("l").textContent=item(c.f,0);
     g("t").textContent=c.m;
     finE(idx);
     return;
   }
   if(idx<esc.length-1){vib(30);idx++;ver(idx);}
 }
-function anF(i){clearInterval(t3);let f=0;t3=setInterval(()=>{f=(f+1)%2;g("l").textContent=esc.at(i).f.at(f);},850);}
+function anF(i){clearInterval(t3);let f=0;t3=setInterval(()=>{f=(f+1)%2;g("l").textContent=item(item(esc,i).f,f);},850);}
 function ver(i){
   clearInterval(t1);clearTimeout(t2);clearInterval(t3);escB=1;
-  const c=esc.at(i);
+  const c=item(esc,i);
   g("bar").style.width=((i+1)/esc.length*100)+"%";
   document.body.style.background="radial-gradient(circle at 50% 30%,"+c.b+")";
   const l=g("l"),tx=g("t"),ind=g("i");
-  l.textContent=c.f.at(0);
+  l.textContent=item(c.f,0);
   l.className=c.c;
   anF(i);
   tx.textContent="";
